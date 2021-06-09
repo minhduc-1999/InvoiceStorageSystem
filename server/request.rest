@@ -1,0 +1,20 @@
+GET http://localhost:3000/users
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1pbmhkdWMxIiwiaWF0IjoxNjIzMjMzMjk2fQ.bHWnKDKcwIldkfhtf9SBpXWye3YJxts8C_sOzYkDpUw
+###
+
+POST http://localhost:3000/users 
+Content-Type: application/json
+
+{
+    "username": "minhduc1",
+    "password": "123456"
+}
+###
+
+POST http://localhost:3000/login 
+Content-Type: application/json
+
+{
+    "username": "minhduc1",
+    "password": "123456"
+}
