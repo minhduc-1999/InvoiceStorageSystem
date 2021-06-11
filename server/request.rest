@@ -1,20 +1,47 @@
-GET http://localhost:3000/users
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1pbmhkdWMxIiwiaWF0IjoxNjIzMjMzMjk2fQ.bHWnKDKcwIldkfhtf9SBpXWye3YJxts8C_sOzYkDpUw
+
+//load user profile
+GET http://localhost:3000/users?id=60c31bae2a87fc41dc3fa2d3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1pbmhkdWMxIiwidXNlcklkIjoiNjBjMzFiYWUyYTg3ZmM0MWRjM2ZhMmQzIiwiaWF0IjoxNjIzNDAwNjQ5fQ._erV-ABZ1WvW8pHJ0H_JjSzB3BDj8VwmpwqfjWnqJEo
+
+###
+//update profile
+PUT http://localhost:3000/users?id=60c31bae2a87fc41dc3fa2d3
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6Im1pbmhkdWMxIiwidXNlcklkIjoiNjBjMzFiYWUyYTg3ZmM0MWRjM2ZhMmQzIiwiaWF0IjoxNjIzNDAwNjQ5fQ._erV-ABZ1WvW8pHJ0H_JjSzB3BDj8VwmpwqfjWnqJEo
+Content-Type: application/json
+
+{
+    "updateClaim": {
+        "address": "Huế",
+        "phoneNumber": "0123456789",
+        "email": "minhduc@gmail.com",
+        "company": "DCoop"
+    }
+}
 ###
 
-POST http://localhost:3000/users 
+//Login
+POST http://localhost:3000/users/login 
 Content-Type: application/json
 
 {
     "username": "minhduc1",
     "password": "123456"
 }
-###
 
-POST http://localhost:3000/login 
+###
+//register
+POST http://localhost:3000/users/register
 Content-Type: application/json
 
 {
     "username": "minhduc1",
-    "password": "123456"
+    "password": "123456",
+    "claims": {
+        "address": "Thừa Thiên Huế",
+        "phoneNumber": "0984318328",
+        "email": "test@gmail.com",
+        "company": "DGroup"
+    }
 }
+
+
