@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
+import DInvoice from "../../abis/Invoices.json";
+import Web3 from "web3";
+
 import {
   DropdownToggle,
   DropdownMenu,
@@ -23,6 +26,7 @@ import {
   Table,
 } from "reactstrap";
 import { AuthContext } from "../../contexts/AuthProvider";
+import { setConstantValue } from "typescript";
 const axios = require("axios");
 
 function Main() {
@@ -40,9 +44,52 @@ function Main() {
   const [company, setCompany] = useState(null);
   const [failAlert, setFailAlert] = useState(false);
 
+  const [dInvoice, setDInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [account, setAccount] = useState(null);
+
   useEffect(() => {
     getUser();
   }, [onChange]);
+
+  //load web3
+  useEffect(async () => {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+      await window.ethereum.enable();
+    } else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider);
+    } else {
+      window.alert(
+        "Non-Ethereum browser detected. You should consider trying MetaMask!"
+      );
+    }
+  }, []);
+
+  //load contract
+  useEffect(async () => {
+    const web3 = window.web3;
+    //Load accounts
+    const accounts = await web3.eth.getAccounts();
+    console.log(accounts);
+    //Add first account the the state
+    setAccount(accounts[0]);
+    //Get network ID
+    const networkId = await web3.eth.net.getId();
+    //Get network data
+    const networkData = DInvoice.networks[networkId];
+    if (networkData) {
+      const invoice = new web3.eth.Contract(DInvoice.abi, networkData.address);
+      console.log("[INVOICE NE]", invoice);
+      // this.setState({ invoice });
+      setDInvoice(invoice);
+
+      // this.setState({ loading: false });
+      setLoading(false);
+    } else {
+      window.alert("DInvoice contract not deployed to detected network");
+    }
+  }, []);
 
   const getUser = () => {
     let loginToken = localStorage.getItem("LoginToken");
@@ -127,7 +174,50 @@ function Main() {
     setOpenInvoice(false);
   };
 
-  const createNewInvoice = () => {};
+  const createNewInvoice = () => {
+    const sender = {
+      _name: "minh duc",
+      _address: "hue",
+      _phone: "091390210",
+      _company: "DDD",
+      _email: "email@gmail.com",
+    };
+    const receiver = {
+      _name: "binh ngu",
+      _address: "qna",
+      _phone: "091390210",
+      _company: "AAA",
+      _email: "email@gmail.com",
+    };
+    const details = [
+      {
+        description: "ao",
+        quantity: 10,
+        unitPrice: 22000,
+        price: 220000,
+      },
+      {
+        description: "quan",
+        quantity: 10,
+        unitPrice: 22000,
+        price: 220000,
+      },
+    ];
+    dInvoice.methods
+      .uploadInvoice(
+        sender,
+        receiver,
+        "20%",
+        "10%",
+        "123456",
+        JSON.stringify(details)
+      )
+      .send({ from: account })
+      .on("transactionHash", (hash) => {
+        console.log("[HASH NE]", hash);
+        setLoading(false);
+      });
+  };
 
   const handleUpdateProfile = () => {
     setFailAlert(false);
