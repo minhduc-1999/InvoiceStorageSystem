@@ -6,7 +6,12 @@ contract Invoices {
   uint public invoiceCount = 0;
   string public name = "Invoices";
   //Create id=>struct mapping
+  // mapping(uint => Invoice) public invoices;
   mapping(uint => Invoice) public invoices;
+
+  mapping(string => uint[]) public ownerShips;
+
+
   //Create Struct
   struct Invoice {
     uint _numberId;
@@ -15,8 +20,6 @@ contract Invoices {
     string _discount;
     string _tax;
     string _total;
-    // mapping(uint => Detail) _details;
-    // uint _detailsSize;
     string _details;
     address _author;
   }
@@ -28,13 +31,6 @@ contract Invoices {
     string _company;
     string _email;
   }
-
-  // struct Detail {
-  //   string _description;
-  //   string _quantity;
-  //   string _unitPrice;
-  //   string _price;
-  // }
 
   //Create Event
   event InvoiceUploaded (
@@ -51,29 +47,6 @@ contract Invoices {
   constructor() public {
   }
 
-  // function CheckDetail(Detail memory detail) private pure returns(bool){
-  //   if (bytes(detail._description).length <= 0)
-  //       return false;
-  //   if (bytes(detail._price).length <= 0)
-  //       return false;
-  //   if (bytes(detail._quantity).length <= 0)
-  //       return false;
-  //   if (bytes(detail._unitPrice).length <= 0)
-  //       return false;
-  //   return true;
-  // }
-
-  // function CheckDetailList(string memory details) internal pure returns(bool){
-  //   if(details.length <= 0)
-  //       return false;
-  //   // for(uint i = 0; i < details.length; i++)
-  //   // {
-  //   //     if (!CheckDetail(details[i]))
-  //   //         return false;
-  //   // }
-  //   return true;
-  // }
-
   function CheckPerson(Person memory person) private pure returns(bool){
     if (bytes(person._address).length <= 0)
         return false;
@@ -88,7 +61,7 @@ contract Invoices {
     return true;
   }
 
-  function uploadInvoice(Person memory sender, Person memory receiver, string memory discount,
+  function uploadInvoice(string memory authorId, Person memory sender, Person memory receiver, string memory discount,
     string memory tax,
     string memory total,
     string memory details) public {
@@ -102,6 +75,8 @@ contract Invoices {
     // require(CheckDetailList(details));
     require(bytes(details).length > 0);
 
+    require(bytes(authorId).length > 0);
+
     // Make sure uploader address exists
     require(msg.sender != address(0));
 
@@ -109,13 +84,15 @@ contract Invoices {
     invoiceCount++;
 
     // Add video to the contract
-    invoices[invoiceCount] = Invoice(invoiceCount,
+    invoices[invoiceCount] = (Invoice(invoiceCount,
      sender,
      receiver,
      discount,
      tax,
      total,
-     details, msg.sender);
+     details, msg.sender));
+
+     ownerShips[authorId].push(invoiceCount);
     // invoices[invoiceCount] = temp;
 
     // Trigger an event
@@ -126,5 +103,13 @@ contract Invoices {
      tax,
      total,
      details, msg.sender);
+  }
+
+  function GetInvoices(string memory id) public view returns(Invoice[] memory) {
+    uint size = ownerShips[id].length;
+    Invoice[] memory result = new Invoice[](size);
+    for(uint i = 0; i< size; i++)
+      result[i] = invoices[ownerShips[id][i]];
+    return result;
   }
 }

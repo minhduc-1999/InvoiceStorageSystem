@@ -65,6 +65,7 @@ function Main() {
   const [dInvoice, setDInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [account, setAccount] = useState(null);
+  const [invoices, setInvoices] = useState([]);
 
   useEffect(() => {
     getUser();
@@ -98,9 +99,42 @@ function Main() {
     const networkData = DInvoice.networks[networkId];
     if (networkData) {
       const invoice = new web3.eth.Contract(DInvoice.abi, networkData.address);
-      console.log("[INVOICE NE]", invoice);
+      // console.log("[INVOICE NE]", invoice);
       // this.setState({ invoice });
       setDInvoice(invoice);
+
+      //console.log("use id", userAcc.userId);
+      invoice.methods
+        .GetInvoices(userAcc.userId)
+        .call()
+        .then((result) => {
+          const temp = result.map((bill) => {
+            return {
+              numberId: bill._numberId,
+              sender: {
+                name: bill._sender._name,
+                address: bill._sender._address,
+                phone: bill._sender._phone,
+                company: bill._sender._company,
+                email: bill._sender._email,
+              },
+              receiver: {
+                name: bill._receiver._name,
+                address: bill._receiver._address,
+                phone: bill._receiver._phone,
+                company: bill._receiver._company,
+                email: bill._receiver._email,
+              },
+              discount: bill._discount,
+              tax: bill._tax,
+              total: bill._total,
+              details: JSON.parse(bill._details),
+              author: bill._author,
+            };
+          });
+          setInvoices(temp);
+          console.log(temp);
+        });
 
       // this.setState({ loading: false });
       setLoading(false);
@@ -225,6 +259,7 @@ function Main() {
       };
       dInvoice.methods
         .uploadInvoice(
+          userAcc.userId,
           sender,
           receiver,
           discount.toString(),
