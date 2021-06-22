@@ -20,13 +20,12 @@ import {
   ModalFooter,
   Form,
   FormGroup,
-  Label,
   Input,
   Alert,
   Table,
 } from "reactstrap";
+import { Tooltip, Fab } from "@material-ui/core";
 import { AuthContext } from "../../contexts/AuthProvider";
-import { setConstantValue } from "typescript";
 const axios = require("axios");
 
 function Main() {
@@ -35,7 +34,9 @@ function Main() {
 
   const [openInvoice, setOpenInvoice] = React.useState(false);
   const [openProfile, setOpenProfile] = React.useState(false);
+  const [openNewInvoice, setOpenNewInvoice] = React.useState(false);
 
+  //UserProfile Fields
   const [onChange, setOnChange] = useState(false);
   const [fullName, setFullName] = useState(null);
   const [email, setEmail] = useState(null);
@@ -43,6 +44,23 @@ function Main() {
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [company, setCompany] = useState(null);
   const [failAlert, setFailAlert] = useState(false);
+
+  //Invoice Fields
+  const [receiverName, setReceiverName] = useState("");
+  const [receiverEmail, setReceiverEmail] = useState("");
+  const [receiverAddress, setReceiverAddress] = useState("");
+  const [receiverPhoneNumber, setReceiverPhoneNumber] = useState("");
+  const [receiverCompany, setReceiverCompany] = useState("");
+
+  const [description, setDescription] = useState("");
+  const [quantity, setQuantity] = useState(0);
+  const [unitPrice, setUnitPrice] = useState(0);
+
+  const [discount, setDiscount] = useState(0);
+  const [tax, setTax] = useState(0);
+
+  const [detailList, setDetailList] = useState([]);
+  const [onDetailListChange, setOnDetailListChange] = useState(false);
 
   const [dInvoice, setDInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -175,48 +193,52 @@ function Main() {
   };
 
   const createNewInvoice = () => {
-    const sender = {
-      _name: "minh duc",
-      _address: "hue",
-      _phone: "091390210",
-      _company: "DDD",
-      _email: "email@gmail.com",
-    };
-    const receiver = {
-      _name: "binh ngu",
-      _address: "qna",
-      _phone: "091390210",
-      _company: "AAA",
-      _email: "email@gmail.com",
-    };
-    const details = [
-      {
-        description: "ao",
-        quantity: 10,
-        unitPrice: 22000,
-        price: 220000,
-      },
-      {
-        description: "quan",
-        quantity: 10,
-        unitPrice: 22000,
-        price: 220000,
-      },
-    ];
-    dInvoice.methods
-      .uploadInvoice(
-        sender,
-        receiver,
-        "20%",
-        "10%",
-        "123456",
-        JSON.stringify(details)
-      )
-      .send({ from: account })
-      .on("transactionHash", (hash) => {
-        console.log("[HASH NE]", hash);
-        setLoading(false);
-      });
+    if (
+      detailList.length < 1 ||
+      email === null ||
+      fullName === null ||
+      address === null ||
+      phoneNumber === null ||
+      company === null ||
+      receiverName === "" ||
+      receiverAddress === "" ||
+      receiverPhoneNumber === "" ||
+      receiverEmail === "" ||
+      receiverCompany === ""
+    ) {
+      console.log("[KO DUOC LUU]");
+    } else {
+      console.log("[DUOC LUU]");
+      const sender = {
+        _name: fullName,
+        _address: address,
+        _phone: phoneNumber,
+        _company: company,
+        _email: email,
+      };
+      const receiver = {
+        _name: receiverName,
+        _address: receiverAddress,
+        _phone: receiverPhoneNumber,
+        _company: receiverCompany,
+        _email: receiverCompany,
+      };
+      dInvoice.methods
+        .uploadInvoice(
+          sender,
+          receiver,
+          discount.toString(),
+          tax.toString(),
+          calcInvoicePrice().toString(),
+          JSON.stringify(detailList)
+        )
+        .send({ from: account })
+        .on("transactionHash", (hash) => {
+          console.log("[HASH NE]", hash);
+          setLoading(false);
+          handleCloseNewInvoice();
+        });
+    }
   };
 
   const handleUpdateProfile = () => {
@@ -234,6 +256,73 @@ function Main() {
   };
 
   const onDismissFail = () => setFailAlert(!failAlert);
+
+  const handleClickOpenNewInvoice = () => {
+    setOpenNewInvoice(true);
+  };
+
+  const handleCloseNewInvoice = () => {
+    setReceiverAddress("");
+    setReceiverCompany("");
+    setReceiverName("");
+    setReceiverPhoneNumber("");
+    setReceiverEmail("");
+    setDetailList([]);
+    setDescription("");
+    setQuantity(0);
+    setUnitPrice(0);
+    setDiscount(0);
+    setTax(0);
+    setOpenNewInvoice(false);
+  };
+
+  const addDetailToTable = () => {
+    if (description === "" || Number(quantity) <= 0 || Number(unitPrice) < 0) {
+      console.log("[KO DUOC THEM VAO BANG]");
+    } else {
+      console.log("[DUOC THEM VAO BANG]");
+      let tempPrice = Number(quantity) * Number(unitPrice);
+      setDetailList([
+        ...detailList,
+        {
+          description: description,
+          quantity: Number(quantity),
+          unitPrice: Number(unitPrice),
+          price: tempPrice,
+        },
+      ]);
+      setDescription("");
+      setQuantity(0);
+      setUnitPrice(0);
+    }
+  };
+
+  const removeDetailFromTable = (index) => {
+    detailList.splice(index, 1);
+    setOnDetailListChange(!onDetailListChange);
+  };
+
+  const calcInvoicePrice = () => {
+    if (detailList.length > 0) {
+      let total = 0;
+      detailList.map((detail) => {
+        total += Number(detail.price);
+      });
+      if (discount !== 0) {
+        total *= Number((100 - Number(discount)) / 100);
+      }
+      if (tax !== 0) {
+        total *= Number((100 + Number(tax)) / 100);
+      }
+      return total.toFixed(2);
+    } else {
+      return 0;
+    }
+  };
+
+  useEffect(() => {
+    setDetailList(detailList);
+  }, [onDetailListChange]);
 
   return (
     <>
@@ -324,7 +413,7 @@ function Main() {
                     color="primary"
                     type="submit"
                     style={{ marginTop: 0 }}
-                    onClick={createNewInvoice}
+                    onClick={handleClickOpenNewInvoice}
                   >
                     Hóa đơn mới
                   </Button>
@@ -389,7 +478,7 @@ function Main() {
 
         <Modal isOpen={openInvoice} size="lg">
           <ModalHeader style={{ margin: 25, justifyContent: "center" }}>
-            <h3 className="title">Hóa đơn</h3>
+            <h3 style={{ fontSize: 25, fontWeight: "bold" }}>Hóa đơn</h3>
           </ModalHeader>
           <ModalBody>
             <Row>
@@ -592,6 +681,241 @@ function Main() {
               onClick={handleUpdateProfile}
             >
               Cập nhật
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <Modal isOpen={openNewInvoice} size="lg">
+          <ModalHeader style={{ justifyContent: "center" }}>
+            <p style={{ fontSize: 25, fontWeight: "bold" }} className="title">
+              Hóa đơn mới
+            </p>
+          </ModalHeader>
+          <ModalBody>
+            <Form>
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <h4 style={{ fontWeight: "bold" }}>Thông tin người nhận</h4>
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col md="8">
+                  <FormGroup>
+                    <label>Họ và Tên</label>
+                    <Input
+                      type="text"
+                      value={receiverName}
+                      onChange={(e) => setReceiverName(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md="4">
+                  <FormGroup>
+                    <label>Số điện thoại</label>
+                    <Input
+                      type="number"
+                      value={receiverPhoneNumber}
+                      onChange={(e) => setReceiverPhoneNumber(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col md="4">
+                  <FormGroup>
+                    <label>Công ty</label>
+                    <Input
+                      type="text"
+                      value={receiverCompany}
+                      onChange={(e) => setReceiverCompany(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md="8">
+                  <FormGroup>
+                    <label>Email</label>
+                    <Input
+                      type="email"
+                      value={receiverEmail}
+                      onChange={(e) => setReceiverEmail(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <label>Địa chỉ</label>
+                    <Input
+                      type="text"
+                      value={receiverAddress}
+                      onChange={(e) => setReceiverAddress(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <ColoredLine color="grey" />
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <h4 style={{ fontWeight: "bold" }}>Chi tiết hóa đơn</h4>
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col>
+                  <Row>
+                    <Col md="5">
+                      <label>Chi tiết</label>
+                    </Col>
+                    <Col md="3">
+                      <label>Đơn giá (VNĐ)</label>
+                    </Col>
+                    <Col md="3">
+                      <label>Số lượng</label>
+                    </Col>
+                  </Row>
+                </Col>
+              </Row>
+              <Row>
+                <Col md="5">
+                  <FormGroup>
+                    <Input
+                      type="text"
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md="3">
+                  <FormGroup>
+                    <Input
+                      type="number"
+                      value={unitPrice}
+                      onChange={(e) => setUnitPrice(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md="3">
+                  <FormGroup>
+                    <Input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col md="1" style={{ alignItems: "flex-end", display: "flex" }}>
+                  <Tooltip title="Thêm">
+                    <Fab
+                      size="small"
+                      style={{ marginBottom: 10 }}
+                      onClick={addDetailToTable}
+                    >
+                      <i className="tim-icons icon-simple-add"></i>
+                    </Fab>
+                  </Tooltip>
+                </Col>
+              </Row>
+              <ColoredLine color="grey" />
+              <table class="table">
+                <thead className="text-primary">
+                  <tr>
+                    <th>ID</th>
+                    <th>Chi tiết</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Tổng tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detailList.length < 1 ? (
+                    <div hidden="true"></div>
+                  ) : (
+                    detailList.map((detail, index) => (
+                      <tr key={index}>
+                        <th scope="row">{index + 1}</th>
+                        <td>{detail.description}</td>
+                        <td>{detail.unitPrice}</td>
+                        <td>{detail.quantity}</td>
+                        <td>{detail.price}</td>
+                        <Fab
+                          size="small"
+                          onClick={() => {
+                            removeDetailFromTable(index);
+                          }}
+                        >
+                          <i className="tim-icons icon-simple-delete"></i>
+                        </Fab>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+              <ColoredLine color="grey" />
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <h4 style={{ fontWeight: "bold" }}>Các khoản khác</h4>
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <label>Discount (%)</label>
+                    <Input
+                      type="number"
+                      value={discount}
+                      onChange={(e) => setDiscount(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+                <Col>
+                  <FormGroup>
+                    <label>Tax (%)</label>
+                    <Input
+                      type="number"
+                      value={tax}
+                      onChange={(e) => setTax(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <ColoredLine color="grey" />
+              <Row>
+                <Col>
+                  <FormGroup>
+                    <h4 style={{ fontWeight: "bold" }}>Tổng cộng</h4>
+                  </FormGroup>
+                </Col>
+                <Row>
+                  <Col md="auto" style={{ marginRight: 25 }}>
+                    <h3 className="title">{calcInvoicePrice()} VNĐ</h3>
+                  </Col>
+                </Row>
+              </Row>
+            </Form>
+          </ModalBody>
+          <ModalFooter style={{ margin: 10, justifyContent: "flex-end" }}>
+            <Button
+              onClick={handleCloseNewInvoice}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+              style={{ marginRight: 20 }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={createNewInvoice}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+            >
+              Lưu
             </Button>
           </ModalFooter>
         </Modal>
