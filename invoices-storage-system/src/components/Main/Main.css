@@ -1,0 +1,17 @@
+.connectRequire {
+    background-color: rgba(0, 0, 0, 0.74);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+#suggest-text {
+    font-size: xx-large;
+    color: white;
+}

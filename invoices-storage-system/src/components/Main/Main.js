@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import DInvoice from "../../abis/Invoices.json";
 import Web3 from "web3";
+import "./Main.css";
 
 import {
   DropdownToggle,
@@ -26,6 +27,7 @@ import {
 import { Tooltip, Fab } from "@material-ui/core";
 import { AuthContext } from "../../contexts/AuthProvider";
 const axios = require("axios");
+const dateFormat = require("dateformat");
 
 function Main() {
   const { logout, userAcc } = useContext(AuthContext);
@@ -37,6 +39,7 @@ function Main() {
 
   //UserProfile Fields
   const [onChange, setOnChange] = useState(false);
+  const [userName, setUserName] = useState(null);
   const [fullName, setFullName] = useState(null);
   const [email, setEmail] = useState(null);
   const [address, setAddress] = useState(null);
@@ -69,18 +72,48 @@ function Main() {
   const [refreshInvoices, setRefreshInvoices] = useState(false);
 
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [connected, setConnected] = useState(window.ethereum?.selectedAddress);
 
   useEffect(() => {
     getUser();
   }, [onChange]);
 
   //load web3
+  // useEffect(async () => {
+  //   if (window.ethereum.isConnected()) {
+  //     console.log("Da ket noi");
+  //   } else console.log("chua ket noi");
+  //   window.ethereum.on("connect", (connectInfo) => {
+  //     console.log("on connect", connectInfo);
+  //   });
+  //   window.ethereum.on("disconnect", (error) => {
+  //     console.log("on disconnect ", error);
+  //   });
+  // }, []);
   useEffect(async () => {
     if (window.ethereum) {
+      console.log("step 1");
       window.web3 = new Web3(window.ethereum);
-      await window.ethereum.enable();
+
+      await window.ethereum
+        .request({ method: "eth_requestAccounts" })
+        .then((res) => {
+          console.log("[enable]", res);
+          setConnected(true);
+          return true;
+        })
+        .then(() => {
+          loadContract();
+        })
+        .catch((err) => {
+          // console.error(err);
+          setConnected(false);
+          return false;
+        });
     } else if (window.web3) {
+      console.log("step 2");
       window.web3 = new Web3(window.web3.currentProvider);
+      setConnected(true);
     } else {
       window.alert(
         "Non-Ethereum browser detected. You should consider trying MetaMask!"
@@ -88,8 +121,29 @@ function Main() {
     }
   }, []);
 
-  //load contract
-  useEffect(async () => {
+  useEffect(() => {
+    setDetailList(detailList);
+  }, [onDetailListChange]);
+
+  const connectEther = async () => {
+    await window.ethereum
+      .request({ method: "eth_requestAccounts" })
+      .then((res) => {
+        console.log("[enable]", res);
+        setConnected(true);
+        return true;
+      })
+      .then(() => {
+        loadContract();
+      })
+      .catch((err) => {
+        // console.error(err);
+        setConnected(false);
+        return false;
+      });
+  };
+
+  const loadContract = async () => {
     const web3 = window.web3;
     //Load accounts
     const accounts = await web3.eth.getAccounts();
@@ -105,7 +159,6 @@ function Main() {
       // console.log("[INVOICE NE]", invoice);
       // this.setState({ invoice });
       setDInvoice(invoice);
-
       //console.log("use id", userAcc.userId);
       invoice.methods
         .GetInvoices(userAcc.userId)
@@ -133,17 +186,22 @@ function Main() {
               total: bill._total,
               details: JSON.parse(bill._details),
               author: bill._author,
+              createAt: new Date(Number(bill._createAt)),
             };
           });
           setInvoices(temp);
           console.log(temp);
         });
-
       // this.setState({ loading: false });
       setLoading(false);
     } else {
       window.alert("DInvoice contract not deployed to detected network");
     }
+  };
+
+  useEffect(() => {
+    console.log("[REFRESH]");
+    loadContract();
   }, [refreshInvoices]);
 
   const getUser = () => {
@@ -162,7 +220,8 @@ function Main() {
         return response.data;
       })
       .then((data) => {
-        setFullName(userAcc.username);
+        setUserName(userAcc.username);
+        setFullName(data.claims.name);
         setEmail(data.claims.email);
         setPhoneNumber(data.claims.phoneNumber);
         setAddress(data.claims.address);
@@ -182,6 +241,7 @@ function Main() {
         phoneNumber: phoneNumber,
         email: email,
         company: company,
+        name: fullName,
       },
     };
     axios
@@ -249,7 +309,9 @@ function Main() {
       receiverAddress === "" ||
       receiverPhoneNumber === "" ||
       receiverEmail === "" ||
-      receiverCompany === ""
+      receiverCompany === "" ||
+      discount === "" ||
+      tax === ""
     ) {
       console.log("[KO DUOC LUU]");
     } else {
@@ -266,7 +328,7 @@ function Main() {
         _address: receiverAddress,
         _phone: receiverPhoneNumber,
         _company: receiverCompany,
-        _email: receiverCompany,
+        _email: receiverEmail,
       };
       dInvoice.methods
         .uploadInvoice(
@@ -276,7 +338,8 @@ function Main() {
           discount.toString(),
           tax.toString(),
           calcInvoicePrice().toString(),
-          JSON.stringify(detailList)
+          JSON.stringify(detailList),
+          Date.now().toString()
         )
         .send({ from: account })
         .on("transactionHash", (hash) => {
@@ -366,10 +429,6 @@ function Main() {
       return 0;
     }
   };
-
-  useEffect(() => {
-    setDetailList(detailList);
-  }, [onDetailListChange]);
 
   return (
     <>
@@ -467,41 +526,60 @@ function Main() {
                 </Col>
               </Row>
             </CardHeader>
-            <CardBody style={{ margin: 10 }}>
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>STT</th>
-                    <th>Hóa đơn số</th>
-                    <th>Ngày tạo</th>
-                    <th>Người gửi</th>
-                    <th>Người nhận</th>
-                    <th>Tổng tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {invoices.length < 1 ? (
-                    <p style={{ marginLeft: 5 }}>Không có hóa đơn nào</p>
-                  ) : (
-                    invoices.map((invoice, index) => (
-                      <tr
-                        key={index}
-                        onDoubleClick={() => {
-                          handleClickOpenInvoice(invoice);
-                        }}
-                      >
-                        <td scope="row">{index + 1}</td>
-                        <td>HD{invoice.numberId}</td>
-                        <td>{invoice.numberId}</td>
-                        <td>{invoice.sender.name}</td>
-                        <td>{invoice.receiver.name}</td>
-                        <td>{invoice.total} VNĐ</td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </CardBody>
+            {connected ? (
+              <CardBody style={{ margin: 10 }}>
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Hóa đơn số</th>
+                      <th>Ngày tạo</th>
+                      <th>Người gửi</th>
+                      <th>Người nhận</th>
+                      <th>Tổng tiền</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {invoices.length < 1 ? (
+                      <p style={{ marginLeft: 5 }}>Không có hóa đơn nào</p>
+                    ) : (
+                      invoices.map((invoice, index) => (
+                        <tr
+                          key={index}
+                          onDoubleClick={() => {
+                            handleClickOpenInvoice(invoice);
+                          }}
+                        >
+                          <td scope="row">{index + 1}</td>
+                          <td>HD{invoice.numberId.toString()}</td>
+                          <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
+                          <td>{invoice.sender.name}</td>
+                          <td>{invoice.receiver.name}</td>
+                          <td>{invoice.total} VNĐ</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </CardBody>
+            ) : (
+              <div className="connectRequire">
+                <h3 id="suggest-text">
+                  You need an wallet to use our service. You should consider
+                  trying MetaMask!
+                </h3>
+                <Button
+                  className="btn-fill"
+                  color="primary"
+                  style={{ marginTop: 0 }}
+                  onClick={() => {
+                    connectEther();
+                  }}
+                >
+                  Connect to your wallet
+                </Button>
+              </div>
+            )}
           </Card>
         </Row>
 
@@ -519,7 +597,10 @@ function Main() {
                     <h4 className="title">Ngày giao dịch:</h4>
                   </Col>
                   <Col>
-                    <h5 className="title">22/04/2000</h5>
+                    <h4>
+                      {selectedInvoice &&
+                        dateFormat(selectedInvoice.createAt, "dd/mm/yyyy")}
+                    </h4>
                   </Col>
                 </Row>
                 <Row>
@@ -702,9 +783,22 @@ function Main() {
                   <FormGroup>
                     <label>Username</label>
                     <Input
-                      value={fullName}
+                      value={userName}
                       placeholder="Username"
                       disabled
+                      type="text"
+                      onChange={(e) => setUserName(e.target.value)}
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+              <Row>
+                <Col className="pr-md-1" md="6">
+                  <FormGroup>
+                    <label>Họ và Tên</label>
+                    <Input
+                      value={fullName}
+                      placeholder="Họ và Tên"
                       type="text"
                       onChange={(e) => setFullName(e.target.value)}
                     />
@@ -925,7 +1019,7 @@ function Main() {
                 </Col>
               </Row>
               <ColoredLine color="grey" />
-              <table class="table">
+              <table className="table">
                 <thead className="text-primary">
                   <tr>
                     <th>ID</th>
@@ -937,7 +1031,7 @@ function Main() {
                 </thead>
                 <tbody>
                   {detailList.length < 1 ? (
-                    <div hidden="true"></div>
+                    <div hidden={true}></div>
                   ) : (
                     detailList.map((detail, index) => (
                       <tr key={index}>

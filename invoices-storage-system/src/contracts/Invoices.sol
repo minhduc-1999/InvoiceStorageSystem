@@ -21,6 +21,7 @@ contract Invoices {
     string _tax;
     string _total;
     string _details;
+    string _createAt;
     address _author;
   }
 
@@ -41,6 +42,7 @@ contract Invoices {
     string _tax,
     string _total,
     string _details,
+    string _createAt,
     address _author
   );
 
@@ -64,7 +66,7 @@ contract Invoices {
   function uploadInvoice(string memory authorId, Person memory sender, Person memory receiver, string memory discount,
     string memory tax,
     string memory total,
-    string memory details) public {
+    string memory details, string memory createAt) public {
     // Make sure the sender exists
     require(CheckPerson(sender));
     // Make sure receiver exists
@@ -77,20 +79,22 @@ contract Invoices {
 
     require(bytes(authorId).length > 0);
 
+    require(bytes(createAt).length > 0);
+
     // Make sure uploader address exists
     require(msg.sender != address(0));
 
-    // Increment video id
+    // Increment invoice id
     invoiceCount++;
 
-    // Add video to the contract
-    invoices[invoiceCount] = (Invoice(invoiceCount,
+    // Add invoice to the contract
+    invoices[invoiceCount] = Invoice(invoiceCount,
      sender,
      receiver,
      discount,
      tax,
      total,
-     details, msg.sender));
+     details, createAt, msg.sender);
 
      ownerShips[authorId].push(invoiceCount);
     // invoices[invoiceCount] = temp;
@@ -102,7 +106,9 @@ contract Invoices {
      discount,
      tax,
      total,
-     details, msg.sender);
+     details,
+     createAt, 
+     msg.sender);
   }
 
   function GetInvoices(string memory id) public view returns(Invoice[] memory) {

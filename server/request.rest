@@ -1,20 +1,21 @@
 
 //load user profile
-GET http://localhost:3000/users?id=60d048f5a3b429358c4147d0
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImxhZ2dlciIsInVzZXJJZCI6IjYwZDA0OGY1YTNiNDI5MzU4YzQxNDdkMCIsImlhdCI6MTYyNDI2ODE0OH0.jhmyO36sMjlB_U0PxS0QgmLu8nz7p2lMVHzra3CjuPw
+GET http://localhost:3000/users?id=60d20ceef39ef70ad45b1401
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImxhZ2dlciIsInVzZXJJZCI6IjYwZDIwY2VlZjM5ZWY3MGFkNDViMTQwMSIsImlhdCI6MTYyNDM3ODYxNn0.mmWIvCsazmyodabashsR-D2oTgBc6gcLLYW0YW-WIf8
 
 ###
 //update profile
-PUT http://localhost:3000/users?id=60d048f5a3b429358c4147d0
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImxhZ2dlciIsInVzZXJJZCI6IjYwZDA0OGY1YTNiNDI5MzU4YzQxNDdkMCIsImlhdCI6MTYyNDI2ODE0OH0.jhmyO36sMjlB_U0PxS0QgmLu8nz7p2lMVHzra3CjuPw
+PUT http://localhost:3000/users?id=60d20ceef39ef70ad45b1401
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6ImxhZ2dlciIsInVzZXJJZCI6IjYwZDIwY2VlZjM5ZWY3MGFkNDViMTQwMSIsImlhdCI6MTYyNDM3ODYxNn0.mmWIvCsazmyodabashsR-D2oTgBc6gcLLYW0YW-WIf8
 Content-Type: application/json
 
 {
     "updateClaim": {
-        "address": "QNA",
+        "address": "HCM",
         "phoneNumber": "0123456789",
         "email": "minhduc@gmail.com",
-        "company": "DCoop"
+        "company": "HAHA",
+        "name": "cai gi day"
     }
 }
 ###
@@ -40,7 +41,8 @@ Content-Type: application/json
         "address": "QNa",
         "phoneNumber": "0984318328",
         "email": "test@gmail.com",
-        "company": "DGroup"
+        "company": "DGroup",
+        "name": "Truong Huu MInh Duc"
     }
 }
 
