@@ -22,7 +22,6 @@ import {
   FormGroup,
   Input,
   Alert,
-  Table,
 } from "reactstrap";
 import { Tooltip, Fab } from "@material-ui/core";
 import { AuthContext } from "../../contexts/AuthProvider";
@@ -66,6 +65,10 @@ function Main() {
   const [loading, setLoading] = useState(true);
   const [account, setAccount] = useState(null);
   const [invoices, setInvoices] = useState([]);
+
+  const [refreshInvoices, setRefreshInvoices] = useState(false);
+
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
 
   useEffect(() => {
     getUser();
@@ -141,7 +144,7 @@ function Main() {
     } else {
       window.alert("DInvoice contract not deployed to detected network");
     }
-  }, []);
+  }, [refreshInvoices]);
 
   const getUser = () => {
     let loginToken = localStorage.getItem("LoginToken");
@@ -218,11 +221,19 @@ function Main() {
     }
   };
 
-  const handleClickOpenInvoice = () => {
-    setOpenInvoice(true);
+  useEffect(() => {
+    if (selectedInvoice !== null) {
+      console.log(selectedInvoice);
+      setOpenInvoice(true);
+    }
+  }, [selectedInvoice]);
+
+  const handleClickOpenInvoice = (invoice) => {
+    setSelectedInvoice(invoice);
   };
 
   const handleCloseInvoice = () => {
+    setSelectedInvoice(null);
     setOpenInvoice(false);
   };
 
@@ -271,6 +282,7 @@ function Main() {
         .on("transactionHash", (hash) => {
           console.log("[HASH NE]", hash);
           setLoading(false);
+          setRefreshInvoices(!refreshInvoices);
           handleCloseNewInvoice();
         });
     }
@@ -419,7 +431,7 @@ function Main() {
                     defaultValue={"1"}
                     onChange={(e) => getSearchField(e)}
                   >
-                    <option value="1">Mã hóa đơn</option>
+                    <option value="1">Hóa đơn số</option>
                     <option value="2">Ngày giao dịch</option>
                     <option value="3">Người gửi</option>
                     <option value="4">Người nhận</option>
@@ -460,51 +472,33 @@ function Main() {
                 <thead>
                   <tr>
                     <th>STT</th>
-                    <th>Mã hóa đơn</th>
+                    <th>Hóa đơn số</th>
                     <th>Ngày tạo</th>
                     <th>Người gửi</th>
                     <th>Người nhận</th>
                     <th>Tổng tiền</th>
-                    <th>Trạng thái</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr onDoubleClick={handleClickOpenInvoice}>
-                    <td>1</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>3</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>4</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
+                  {invoices.length < 1 ? (
+                    <p style={{ marginLeft: 5 }}>Không có hóa đơn nào</p>
+                  ) : (
+                    invoices.map((invoice, index) => (
+                      <tr
+                        key={index}
+                        onDoubleClick={() => {
+                          handleClickOpenInvoice(invoice);
+                        }}
+                      >
+                        <td scope="row">{index + 1}</td>
+                        <td>HD{invoice.numberId}</td>
+                        <td>{invoice.numberId}</td>
+                        <td>{invoice.sender.name}</td>
+                        <td>{invoice.receiver.name}</td>
+                        <td>{invoice.total} VNĐ</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </CardBody>
@@ -516,98 +510,174 @@ function Main() {
             <h3 style={{ fontSize: 25, fontWeight: "bold" }}>Hóa đơn</h3>
           </ModalHeader>
           <ModalBody>
-            <Row>
-              <Col md="3">
-                <h4 className="title">Ngày giao dịch:</h4>
-              </Col>
-              <Col>
-                <h5 className="title">22/04/2000</h5>
-              </Col>
-            </Row>
-            <Row>
-              <Col md="3">
-                <h4 className="title">Người gửi:</h4>
-              </Col>
-              <Col>
-                <h5 className="title">Võ Thanh Bình</h5>
-              </Col>
-            </Row>
-            <Row>
-              <Col md="3">
-                <h4 className="title">Người nhận:</h4>
-              </Col>
-              <Col>
-                <h5 className="title">Võ Thanh Bình</h5>
-              </Col>
-            </Row>
+            {selectedInvoice === null ? (
+              <div hidden="true"></div>
+            ) : (
+              <div>
+                <Row>
+                  <Col md="3">
+                    <h4 className="title">Ngày giao dịch:</h4>
+                  </Col>
+                  <Col>
+                    <h5 className="title">22/04/2000</h5>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="6">
+                    <h4 className="title">Người gửi:</h4>
+                  </Col>
+                  <Col md="6">
+                    <h4 className="title">Người nhận:</h4>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="3">
+                    <h5>Họ và Tên:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.sender.name}</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>Họ và Tên:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.receiver.name}</h5>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="3">
+                    <h5>Số điện thoại:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.sender.phone}</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>Số điện thoại:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.receiver.phone}</h5>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="3">
+                    <h5>Công ty:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.sender.company}</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>Công ty:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.receiver.company}</h5>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="3">
+                    <h5>Email:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.sender.email}</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>Email:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.receiver.email}</h5>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md="3">
+                    <h5>Địa chỉ:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.sender.address}</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>Địa chỉ:</h5>
+                  </Col>
+                  <Col md="3">
+                    <h5>{selectedInvoice.receiver.address}</h5>
+                  </Col>
+                </Row>
+              </div>
+            )}
             <ColoredLine color="gray" />
             <Row>
               <Card>
                 <CardHeader>
                   <Row>
                     <Col>
-                      <CardTitle tag="h4">Chi tiết hóa đơn</CardTitle>
+                      <h4 className="title">Chi tiết hóa đơn</h4>
                     </Col>
                   </Row>
                 </CardHeader>
                 <CardBody>
-                  <Table className="tablesorter" responsive>
+                  <table class="table" responsive>
                     <thead className="text-primary">
                       <tr>
                         <th>STT</th>
-                        <th>Thông tin</th>
+                        <th>Chi tiết</th>
                         <th>Số lượng</th>
                         <th>Đơn giá</th>
                         <th>Tổng tiền</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr>
-                        <th scope="row">1</th>
-                        <td>abc</td>
-                        <td>50</td>
-                        <td>10000 VNĐ</td>
-                        <td>5000000 VNĐ</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">1</th>
-                        <td>xyz</td>
-                        <td>50</td>
-                        <td>10000 VNĐ</td>
-                        <td>5000000 VNĐ</td>
-                      </tr>
-                      <tr>
-                        <th scope="row">1</th>
-                        <td>binh</td>
-                        <td>50</td>
-                        <td>10000 VNĐ</td>
-                        <td>5000000 VNĐ</td>
-                      </tr>
+                      {selectedInvoice !== null &&
+                        selectedInvoice.details.map((detail, index) => (
+                          <tr key={index}>
+                            <th scope="row">{index + 1}</th>
+                            <td>{detail.description}</td>
+                            <td>{detail.quantity}</td>
+                            <td>{detail.unitPrice} VNĐ</td>
+                            <td>{detail.price} VNĐ</td>
+                          </tr>
+                        ))}
                     </tbody>
-                  </Table>
+                  </table>
                 </CardBody>
               </Card>
             </Row>
+            {selectedInvoice !== null &&
+              (selectedInvoice.discount !== "0" ||
+                selectedInvoice.tax !== "0") && (
+                <div>
+                  <ColoredLine color="gray" />
+                  <Row>
+                    <Col>
+                      <h4 className="title">Các khoản phí khác</h4>
+                    </Col>
+                  </Row>
+                  <Row>
+                    <Col md="3">
+                      <h5>Discount:</h5>
+                    </Col>
+                    <Col md="3">
+                      <h5>{selectedInvoice.discount} %</h5>
+                    </Col>
+                    <Col md="3">
+                      <h5>Tax:</h5>
+                    </Col>
+                    <Col md="3">
+                      <h5>{selectedInvoice.tax} %</h5>
+                    </Col>
+                  </Row>
+                </div>
+              )}
             <ColoredLine color="gray" />
             <Row>
               <Col>
                 <h4 className="title">Thành tiền</h4>
               </Col>
               <Col md="auto">
-                <h4 className="title">1000000 VNĐ</h4>
+                <h4 className="title">
+                  {selectedInvoice !== null && selectedInvoice.total} VNĐ
+                </h4>
               </Col>
             </Row>
           </ModalBody>
-          <ModalFooter style={{ margin: 25, justifyContent: "flex-end" }}>
-            <Button
-              onClick={handleCloseInvoice}
-              className="btn-fill"
-              color="primary"
-              type="submit"
-              style={{ marginRight: 25 }}
-            >
-              In hóa đơn
-            </Button>
+          <ModalFooter style={{ margin: 5, justifyContent: "flex-end" }}>
             <Button
               onClick={handleCloseInvoice}
               className="btn-fill"
