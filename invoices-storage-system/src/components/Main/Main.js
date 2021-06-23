@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import DInvoice from "../../abis/Invoices.json";
 import Web3 from "web3";
+import "./Main.css";
 
 import {
   DropdownToggle,
@@ -67,17 +68,48 @@ function Main() {
   const [account, setAccount] = useState(null);
   const [invoices, setInvoices] = useState([]);
 
+  const [connected, setConnected] = useState(window.ethereum?.selectedAddress);
+
   useEffect(() => {
     getUser();
   }, [onChange]);
 
   //load web3
+  // useEffect(async () => {
+  //   if (window.ethereum.isConnected()) {
+  //     console.log("Da ket noi");
+  //   } else console.log("chua ket noi");
+  //   window.ethereum.on("connect", (connectInfo) => {
+  //     console.log("on connect", connectInfo);
+  //   });
+  //   window.ethereum.on("disconnect", (error) => {
+  //     console.log("on disconnect ", error);
+  //   });
+  // }, []);
   useEffect(async () => {
     if (window.ethereum) {
+      console.log("step 1");
       window.web3 = new Web3(window.ethereum);
-      await window.ethereum.enable();
+
+      await window.ethereum
+        .request({ method: "eth_requestAccounts" })
+        .then((res) => {
+          console.log("[enable]", res);
+          setConnected(true);
+          return true;
+        })
+        .then(() => {
+          loadContract();
+        })
+        .catch((err) => {
+          // console.error(err);
+          setConnected(false);
+          return false;
+        });
     } else if (window.web3) {
+      console.log("step 2");
       window.web3 = new Web3(window.web3.currentProvider);
+      setConnected(true);
     } else {
       window.alert(
         "Non-Ethereum browser detected. You should consider trying MetaMask!"
@@ -85,8 +117,29 @@ function Main() {
     }
   }, []);
 
-  //load contract
-  useEffect(async () => {
+  useEffect(() => {
+    setDetailList(detailList);
+  }, [onDetailListChange]);
+
+  const connectEther = async () => {
+    await window.ethereum
+      .request({ method: "eth_requestAccounts" })
+      .then((res) => {
+        console.log("[enable]", res);
+        setConnected(true);
+        return true;
+      })
+      .then(() => {
+        loadContract();
+      })
+      .catch((err) => {
+        // console.error(err);
+        setConnected(false);
+        return false;
+      });
+  };
+
+  const loadContract = async () => {
     const web3 = window.web3;
     //Load accounts
     const accounts = await web3.eth.getAccounts();
@@ -102,7 +155,6 @@ function Main() {
       // console.log("[INVOICE NE]", invoice);
       // this.setState({ invoice });
       setDInvoice(invoice);
-
       //console.log("use id", userAcc.userId);
       invoice.methods
         .GetInvoices(userAcc.userId)
@@ -130,18 +182,18 @@ function Main() {
               total: bill._total,
               details: JSON.parse(bill._details),
               author: bill._author,
+              createAt: new Date(Number(bill._createAt)),
             };
           });
           setInvoices(temp);
           console.log(temp);
         });
-
       // this.setState({ loading: false });
       setLoading(false);
     } else {
       window.alert("DInvoice contract not deployed to detected network");
     }
-  }, []);
+  };
 
   const getUser = () => {
     let loginToken = localStorage.getItem("LoginToken");
@@ -265,7 +317,8 @@ function Main() {
           discount.toString(),
           tax.toString(),
           calcInvoicePrice().toString(),
-          JSON.stringify(detailList)
+          JSON.stringify(detailList),
+          Date.now().toString()
         )
         .send({ from: account })
         .on("transactionHash", (hash) => {
@@ -354,10 +407,6 @@ function Main() {
       return 0;
     }
   };
-
-  useEffect(() => {
-    setDetailList(detailList);
-  }, [onDetailListChange]);
 
   return (
     <>
@@ -455,59 +504,78 @@ function Main() {
                 </Col>
               </Row>
             </CardHeader>
-            <CardBody style={{ margin: 10 }}>
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>STT</th>
-                    <th>Mã hóa đơn</th>
-                    <th>Ngày tạo</th>
-                    <th>Người gửi</th>
-                    <th>Người nhận</th>
-                    <th>Tổng tiền</th>
-                    <th>Trạng thái</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr onDoubleClick={handleClickOpenInvoice}>
-                    <td>1</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>2</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>3</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                  <tr>
-                    <td>4</td>
-                    <td>HD012345</td>
-                    <td>22/04/2000</td>
-                    <td>Bình đẹp trai</td>
-                    <td>Bình đẹp trai</td>
-                    <td>1000000 VNĐ</td>
-                    <td>Đã thanh toán</td>
-                  </tr>
-                </tbody>
-              </table>
-            </CardBody>
+            {connected ? (
+              <CardBody style={{ margin: 10 }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>STT</th>
+                      <th>Mã hóa đơn</th>
+                      <th>Ngày tạo</th>
+                      <th>Người gửi</th>
+                      <th>Người nhận</th>
+                      <th>Tổng tiền</th>
+                      <th>Trạng thái</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr onDoubleClick={handleClickOpenInvoice}>
+                      <td>1</td>
+                      <td>HD012345</td>
+                      <td>22/04/2000</td>
+                      <td>Bình đẹp trai</td>
+                      <td>Bình đẹp trai</td>
+                      <td>1000000 VNĐ</td>
+                      <td>Đã thanh toán</td>
+                    </tr>
+                    <tr>
+                      <td>2</td>
+                      <td>HD012345</td>
+                      <td>22/04/2000</td>
+                      <td>Bình đẹp trai</td>
+                      <td>Bình đẹp trai</td>
+                      <td>1000000 VNĐ</td>
+                      <td>Đã thanh toán</td>
+                    </tr>
+                    <tr>
+                      <td>3</td>
+                      <td>HD012345</td>
+                      <td>22/04/2000</td>
+                      <td>Bình đẹp trai</td>
+                      <td>Bình đẹp trai</td>
+                      <td>1000000 VNĐ</td>
+                      <td>Đã thanh toán</td>
+                    </tr>
+                    <tr>
+                      <td>4</td>
+                      <td>HD012345</td>
+                      <td>22/04/2000</td>
+                      <td>Bình đẹp trai</td>
+                      <td>Bình đẹp trai</td>
+                      <td>1000000 VNĐ</td>
+                      <td>Đã thanh toán</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </CardBody>
+            ) : (
+              <div className="connectRequire">
+                <h3 id="suggest-text">
+                  You need an wallet to use our service. You should consider
+                  trying MetaMask!
+                </h3>
+                <Button
+                  className="btn-fill"
+                  color="primary"
+                  style={{ marginTop: 0 }}
+                  onClick={() => {
+                    connectEther();
+                  }}
+                >
+                  Connect to your wallet
+                </Button>
+              </div>
+            )}
           </Card>
         </Row>
 
@@ -855,7 +923,7 @@ function Main() {
                 </Col>
               </Row>
               <ColoredLine color="grey" />
-              <table class="table">
+              <table className="table">
                 <thead className="text-primary">
                   <tr>
                     <th>ID</th>
@@ -867,7 +935,7 @@ function Main() {
                 </thead>
                 <tbody>
                   {detailList.length < 1 ? (
-                    <div hidden="true"></div>
+                    <div hidden={true}></div>
                   ) : (
                     detailList.map((detail, index) => (
                       <tr key={index}>
