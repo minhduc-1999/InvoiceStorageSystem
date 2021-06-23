@@ -35,6 +35,9 @@ function Main() {
   const [openInvoice, setOpenInvoice] = React.useState(false);
   const [openProfile, setOpenProfile] = React.useState(false);
   const [openNewInvoice, setOpenNewInvoice] = React.useState(false);
+  const [openSearchInvoice, setOpenSearchInvoice] = useState(false);
+
+  const [searchInvoiceId, setSearchInvoiceId] = useState("");
 
   //UserProfile Fields
   const [onChange, setOnChange] = useState(false);
@@ -262,6 +265,7 @@ function Main() {
         .GetInvoices(userAcc.userId)
         .call()
         .then((result) => {
+          //console.log(result);
           const temp = result.map((bill) => {
             return {
               numberId: bill._numberId,
@@ -288,13 +292,51 @@ function Main() {
             };
           });
           setInvoices(temp);
-          console.log(temp);
+          //console.log(temp);
         });
       // this.setState({ loading: false });
       setLoading(false);
     } else {
       window.alert("DInvoice contract not deployed to detected network");
     }
+  };
+
+  const getContractByInvoiceId = async (invoiceId) => {
+    dInvoice.methods
+      .invoices(Number(invoiceId))
+      .call()
+      .then((rs) => {
+        const temp = {
+          numberId: rs._numberId,
+          sender: {
+            name: rs._sender._name,
+            address: rs._sender._address,
+            phone: rs._sender._phone,
+            company: rs._sender._company,
+            email: rs._sender._email,
+          },
+          receiver: {
+            name: rs._receiver._name,
+            address: rs._receiver._address,
+            phone: rs._receiver._phone,
+            company: rs._receiver._company,
+            email: rs._receiver._email,
+          },
+          discount: rs._discount,
+          tax: rs._tax,
+          total: rs._total,
+          details: JSON.parse(rs._details),
+          author: rs._author,
+          createAt: new Date(Number(rs._createAt)),
+        };
+        //console.log(temp);
+        setSelectedInvoice(temp);
+      })
+      .catch(() => {
+        window.alert(
+          "Can't find a valid invoice\nPlease check the invoice code again"
+        );
+      });
   };
 
   useEffect(() => {
@@ -602,7 +644,21 @@ function Main() {
                     onChange={(e) => filterInvoiceByDate(e.target.value)}
                   />
                 </Col>
-                <Col md="5" />
+                <Col md="3" />
+                <Col md="2">
+                  <Button
+                    className="btn-fill"
+                    color="primary"
+                    type="submit"
+                    style={{ marginTop: 0 }}
+                    onClick={() => {
+                      setSearchInvoiceId("");
+                      setOpenSearchInvoice(true);
+                    }}
+                  >
+                    Tìm hóa đơn
+                  </Button>
+                </Col>
                 <Col md="2">
                   <Button
                     className="btn-fill"
@@ -1191,6 +1247,60 @@ function Main() {
               type="submit"
             >
               Lưu
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <Modal isOpen={openSearchInvoice} size="sm">
+          <ModalHeader style={{ justifyContent: "center" }}>
+            <p style={{ fontSize: 25, fontWeight: "bold" }} className="title">
+              Tìm hóa đơn
+            </p>
+          </ModalHeader>
+          <ModalBody>
+            <Form>
+              <Row>
+                <Col md="auto">
+                  <label style={{ fontSize: 20 }}>HD</label>
+                </Col>
+                <Col>
+                  <FormGroup>
+                    <Input
+                      type="text"
+                      placeholder="Nội dung tìm kiếm"
+                      value={searchInvoiceId}
+                      onChange={(e) =>
+                        setSearchInvoiceId(e.target.value.replace(/^\D+/g, ""))
+                      }
+                    />
+                  </FormGroup>
+                </Col>
+              </Row>
+            </Form>
+          </ModalBody>
+          <ModalFooter style={{ margin: 10, justifyContent: "flex-end" }}>
+            <Button
+              onClick={() => {
+                setOpenSearchInvoice(false);
+              }}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+              style={{ marginRight: 20 }}
+            >
+              Hủy
+            </Button>
+            <Button
+              onClick={() => {
+                if (searchInvoiceId !== "") {
+                  getContractByInvoiceId(Number(searchInvoiceId));
+                }
+              }}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+            >
+              Tìm kiếm
             </Button>
           </ModalFooter>
         </Modal>
