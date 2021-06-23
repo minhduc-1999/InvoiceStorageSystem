@@ -31,7 +31,6 @@ const dateFormat = require("dateformat");
 
 function Main() {
   const { logout, userAcc } = useContext(AuthContext);
-  const [isDateSearch, setIsDateSearch] = useState(false);
 
   const [openInvoice, setOpenInvoice] = React.useState(false);
   const [openProfile, setOpenProfile] = React.useState(false);
@@ -74,6 +73,104 @@ function Main() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [connected, setConnected] = useState(window.ethereum?.selectedAddress);
 
+  //searchCombo-start
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResult, setSearchResult] = useState([]);
+  const [isDateSearch, setIsDateSearch] = useState(false);
+  const [searchField, setSearchField] = useState("1");
+
+  const getSearchField = (e) => {
+    setSearchResult([]);
+    setSearchTerm("");
+    setSearchField(e.target.value);
+    if (e.target.value === "2") {
+      var today = new Date();
+      var currentDate = today.toISOString().substring(0, 10);
+      document.getElementById("searchDate").value = currentDate;
+      setIsDateSearch(true);
+      filterInvoiceByDate(document.getElementById("searchDate").value);
+    } else {
+      setIsDateSearch(false);
+    }
+  };
+
+  const filterInvoiceByDate = (date) => {
+    if (date !== null) {
+      const newInvoiceList = invoices.filter((bill) => {
+        return (
+          dateFormat(Object.values(bill)[3].createAt, "dd/mm/yyyy") ===
+          dateFormat(date, "dd/mm/yyyy")
+        );
+      });
+      setSearchResult(newInvoiceList);
+    } else {
+      setSearchResult(invoices);
+    }
+  };
+
+  const getSearchTerm = (e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value !== "") {
+      console.log(e.target.value);
+      let newInvoiceList = [];
+      switch (searchField) {
+        case "1":
+          newInvoiceList = invoices.filter((bill) => {
+            return ("HD" + bill.numberId.toString())
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "3":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.sender.name + "")
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "4":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.receiver.name + "")
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "5":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.total + "").includes(e.target.value);
+          });
+          break;
+
+        default:
+          break;
+      }
+      setSearchResult(newInvoiceList);
+    } else {
+      setSearchResult(invoices);
+    }
+  };
+
+  const renderInvoices = () =>
+    (searchTerm.length < 1 && searchField !== "2"
+      ? invoices
+      : searchResult
+    ).map((invoice, index) => (
+      <tr
+        key={index}
+        onDoubleClick={() => {
+          handleClickOpenInvoice(invoice);
+        }}
+      >
+        <td scope="row">{index + 1}</td>
+        <td>HD{invoice.numberId.toString()}</td>
+        <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
+        <td>{invoice.sender.name}</td>
+        <td>{invoice.receiver.name}</td>
+        <td>{invoice.total} VNĐ</td>
+      </tr>
+    ));
+  //searchCombo-end
+
   useEffect(() => {
     getUser();
   }, [onChange]);
@@ -104,6 +201,7 @@ function Main() {
         })
         .then(() => {
           loadContract();
+          setOnChange(!onChange);
         })
         .catch((err) => {
           // console.error(err);
@@ -272,14 +370,6 @@ function Main() {
       }}
     />
   );
-
-  const getSearchField = (e) => {
-    if (e.target.value === "2") {
-      setIsDateSearch(true);
-    } else {
-      setIsDateSearch(false);
-    }
-  };
 
   useEffect(() => {
     if (selectedInvoice !== null) {
@@ -494,22 +584,22 @@ function Main() {
                     <option value="2">Ngày giao dịch</option>
                     <option value="3">Người gửi</option>
                     <option value="4">Người nhận</option>
-                    <option value="5">Trạng thái</option>
+                    <option value="5">Tổng tiền</option>
                   </Input>
                 </Col>
                 <Col md="3" hidden={isDateSearch}>
                   <Input
-                    //value={searchTerm}
+                    value={searchTerm}
                     type="text"
                     placeholder="Nội dung tìm kiếm"
-                    //onChange={(e) => getSearchTerm(e)}
+                    onChange={(e) => getSearchTerm(e)}
                   />
                 </Col>
                 <Col md="3" hidden={!isDateSearch}>
                   <Input
-                    //defaultValue={dateOB}
+                    id="searchDate"
                     type="date"
-                    //onChange={e => setDateOB(e.target.value)}
+                    onChange={(e) => filterInvoiceByDate(e.target.value)}
                   />
                 </Col>
                 <Col md="5" />
@@ -528,39 +618,25 @@ function Main() {
             </CardHeader>
             {connected ? (
               <CardBody style={{ margin: 10 }}>
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>STT</th>
-                      <th>Hóa đơn số</th>
-                      <th>Ngày tạo</th>
-                      <th>Người gửi</th>
-                      <th>Người nhận</th>
-                      <th>Tổng tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.length < 1 ? (
-                      <p style={{ marginLeft: 5 }}>Không có hóa đơn nào</p>
-                    ) : (
-                      invoices.map((invoice, index) => (
-                        <tr
-                          key={index}
-                          onDoubleClick={() => {
-                            handleClickOpenInvoice(invoice);
-                          }}
-                        >
-                          <td scope="row">{index + 1}</td>
-                          <td>HD{invoice.numberId.toString()}</td>
-                          <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
-                          <td>{invoice.sender.name}</td>
-                          <td>{invoice.receiver.name}</td>
-                          <td>{invoice.total} VNĐ</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                {renderInvoices().length <= 0 ? (
+                  <p style={{ fontSize: 20, marginLeft: 10 }}>
+                    Không tìm thấy hóa đơn phù hợp
+                  </p>
+                ) : (
+                  <table class="table">
+                    <thead className="text-primary">
+                      <tr>
+                        <th>STT</th>
+                        <th>Hóa đơn số</th>
+                        <th>Ngày tạo</th>
+                        <th>Người gửi</th>
+                        <th>Người nhận</th>
+                        <th>Tổng tiền</th>
+                      </tr>
+                    </thead>
+                    <tbody>{renderInvoices()}</tbody>
+                  </table>
+                )}
               </CardBody>
             ) : (
               <div className="connectRequire">
