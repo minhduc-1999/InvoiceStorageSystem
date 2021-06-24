@@ -55,8 +55,12 @@ function Login() {
         signUpCompany,
         signUpFullName
       )
-        .then(() => {
-          setIsLogin(true);
+        .then((rs) => {
+          if (rs) {
+            setIsLogin(true);
+          } else {
+            setSignUpAlertVisible(true);
+          }
         })
         .catch(() => {
           setSignUpAlertVisible(true);

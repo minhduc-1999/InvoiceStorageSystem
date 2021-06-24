@@ -340,6 +340,7 @@ function Main() {
       >
         <td scope="row">{index + 1}</td>
         <td>HD{invoice.numberId.toString()}</td>
+        {/* <td>{invoice.txid.toString()}</td> */}
         <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
         <td>{invoice.sender.name}</td>
         <td>{invoice.receiver.name}</td>
@@ -688,6 +689,7 @@ function Main() {
                       <tr>
                         <th>STT</th>
                         <th>Hóa đơn số</th>
+                        <th>TXID</th>
                         <th>Ngày tạo</th>
                         <th>Người gửi</th>
                         <th>Người nhận</th>
