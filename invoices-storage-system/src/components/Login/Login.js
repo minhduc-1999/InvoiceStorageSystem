@@ -31,8 +31,8 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    login(username, password).then(function () {
-      checkError();
+    login(username, password).then((res) => {
+      setAlertVisible(!res);
     });
   };
 
