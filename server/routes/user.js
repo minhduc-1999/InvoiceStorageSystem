@@ -28,6 +28,10 @@ router.put("/", authenticateToken, async (req, res) => {
 });
 
 router.post("/register", async (req, res) => {
+  const user = await User.findOne({ username: req.body.username }).exec();
+  if (user) {
+    return res.status(400).send("Username has been existed");
+  }
   const hashedPass = await bcrypt.hash(req.body.password, 10);
   const newUser = {
     ...req.body,

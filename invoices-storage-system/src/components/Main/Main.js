@@ -26,6 +26,7 @@ import {
 } from "reactstrap";
 import { Tooltip, Fab } from "@material-ui/core";
 import { AuthContext } from "../../contexts/AuthProvider";
+import { once } from "events";
 const axios = require("axios");
 const dateFormat = require("dateformat");
 
@@ -70,6 +71,9 @@ function Main() {
   const [loading, setLoading] = useState(true);
   const [account, setAccount] = useState(null);
   const [invoices, setInvoices] = useState([]);
+  const [connecting, setConnecting] = useState(
+    window.ethereum?.selectedAddress ? false : true
+  );
 
   const [refreshInvoices, setRefreshInvoices] = useState(false);
 
@@ -82,124 +86,23 @@ function Main() {
   const [isDateSearch, setIsDateSearch] = useState(false);
   const [searchField, setSearchField] = useState("1");
 
-  const getSearchField = (e) => {
-    setSearchResult([]);
-    setSearchTerm("");
-    setSearchField(e.target.value);
-    if (e.target.value === "2") {
-      var today = new Date();
-      var currentDate = today.toISOString().substring(0, 10);
-      document.getElementById("searchDate").value = currentDate;
-      setIsDateSearch(true);
-      filterInvoiceByDate(document.getElementById("searchDate").value);
-    } else {
-      setIsDateSearch(false);
-    }
-  };
-
-  const filterInvoiceByDate = (date) => {
-    if (date !== null) {
-      const newInvoiceList = invoices.filter((bill) => {
-        return (
-          dateFormat(Object.values(bill)[3].createAt, "dd/mm/yyyy") ===
-          dateFormat(date, "dd/mm/yyyy")
-        );
-      });
-      setSearchResult(newInvoiceList);
-    } else {
-      setSearchResult(invoices);
-    }
-  };
-
-  const getSearchTerm = (e) => {
-    setSearchTerm(e.target.value);
-    if (e.target.value !== "") {
-      console.log(e.target.value);
-      let newInvoiceList = [];
-      switch (searchField) {
-        case "1":
-          newInvoiceList = invoices.filter((bill) => {
-            return ("HD" + bill.numberId.toString())
-              .toLowerCase()
-              .includes(e.target.value.toLowerCase());
-          });
-          break;
-        case "3":
-          newInvoiceList = invoices.filter((bill) => {
-            return (bill.sender.name + "")
-              .toLowerCase()
-              .includes(e.target.value.toLowerCase());
-          });
-          break;
-        case "4":
-          newInvoiceList = invoices.filter((bill) => {
-            return (bill.receiver.name + "")
-              .toLowerCase()
-              .includes(e.target.value.toLowerCase());
-          });
-          break;
-        case "5":
-          newInvoiceList = invoices.filter((bill) => {
-            return (bill.total + "").includes(e.target.value);
-          });
-          break;
-
-        default:
-          break;
-      }
-      setSearchResult(newInvoiceList);
-    } else {
-      setSearchResult(invoices);
-    }
-  };
-
-  const renderInvoices = () =>
-    (searchTerm.length < 1 && searchField !== "2"
-      ? invoices
-      : searchResult
-    ).map((invoice, index) => (
-      <tr
-        key={index}
-        onDoubleClick={() => {
-          handleClickOpenInvoice(invoice);
-        }}
-      >
-        <td scope="row">{index + 1}</td>
-        <td>HD{invoice.numberId.toString()}</td>
-        <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
-        <td>{invoice.sender.name}</td>
-        <td>{invoice.receiver.name}</td>
-        <td>{invoice.total} VNĐ</td>
-      </tr>
-    ));
   //searchCombo-end
 
   useEffect(() => {
     getUser();
   }, [onChange]);
 
-  //load web3
-  // useEffect(async () => {
-  //   if (window.ethereum.isConnected()) {
-  //     console.log("Da ket noi");
-  //   } else console.log("chua ket noi");
-  //   window.ethereum.on("connect", (connectInfo) => {
-  //     console.log("on connect", connectInfo);
-  //   });
-  //   window.ethereum.on("disconnect", (error) => {
-  //     console.log("on disconnect ", error);
-  //   });
-  // }, []);
   useEffect(async () => {
     if (window.ethereum) {
       console.log("step 1");
       window.web3 = new Web3(window.ethereum);
-
+      setConnecting(true);
       await window.ethereum
         .request({ method: "eth_requestAccounts" })
         .then((res) => {
           console.log("[enable]", res);
           setConnected(true);
+          setConnecting(false);
           return true;
         })
         .then(() => {
@@ -226,12 +129,26 @@ function Main() {
     setDetailList(detailList);
   }, [onDetailListChange]);
 
+  useEffect(() => {
+    console.log("[REFRESH]");
+    loadContract();
+  }, [refreshInvoices]);
+
+  useEffect(() => {
+    if (selectedInvoice !== null) {
+      console.log(selectedInvoice);
+      setOpenInvoice(true);
+    }
+  }, [selectedInvoice]);
+
   const connectEther = async () => {
+    setConnecting(true);
     await window.ethereum
       .request({ method: "eth_requestAccounts" })
       .then((res) => {
         console.log("[enable]", res);
         setConnected(true);
+        setConnecting(false);
         return true;
       })
       .then(() => {
@@ -339,10 +256,96 @@ function Main() {
       });
   };
 
-  useEffect(() => {
-    console.log("[REFRESH]");
-    loadContract();
-  }, [refreshInvoices]);
+  const getSearchField = (e) => {
+    setSearchResult([]);
+    setSearchTerm("");
+    setSearchField(e.target.value);
+    if (e.target.value === "2") {
+      var today = new Date();
+      var currentDate = today.toISOString().substring(0, 10);
+      document.getElementById("searchDate").value = currentDate;
+      setIsDateSearch(true);
+      filterInvoiceByDate(document.getElementById("searchDate").value);
+    } else {
+      setIsDateSearch(false);
+    }
+  };
+
+  const filterInvoiceByDate = (date) => {
+    if (date !== null) {
+      const newInvoiceList = invoices.filter((bill) => {
+        return (
+          dateFormat(Object.values(bill)[3].createAt, "dd/mm/yyyy") ===
+          dateFormat(date, "dd/mm/yyyy")
+        );
+      });
+      setSearchResult(newInvoiceList);
+    } else {
+      setSearchResult(invoices);
+    }
+  };
+
+  const getSearchTerm = (e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value !== "") {
+      console.log(e.target.value);
+      let newInvoiceList = [];
+      switch (searchField) {
+        case "1":
+          newInvoiceList = invoices.filter((bill) => {
+            return ("HD" + bill.numberId.toString())
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "3":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.sender.name + "")
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "4":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.receiver.name + "")
+              .toLowerCase()
+              .includes(e.target.value.toLowerCase());
+          });
+          break;
+        case "5":
+          newInvoiceList = invoices.filter((bill) => {
+            return (bill.total + "").includes(e.target.value);
+          });
+          break;
+
+        default:
+          break;
+      }
+      setSearchResult(newInvoiceList);
+    } else {
+      setSearchResult(invoices);
+    }
+  };
+
+  const renderInvoices = () =>
+    (searchTerm.length < 1 && searchField !== "2"
+      ? invoices
+      : searchResult
+    ).map((invoice, index) => (
+      <tr
+        key={index}
+        onDoubleClick={() => {
+          handleClickOpenInvoice(invoice);
+        }}
+      >
+        <td scope="row">{index + 1}</td>
+        <td>HD{invoice.numberId.toString()}</td>
+        <td>{dateFormat(invoice.createAt, "dd/mm/yyyy")}</td>
+        <td>{invoice.sender.name}</td>
+        <td>{invoice.receiver.name}</td>
+        <td>{invoice.total} VNĐ</td>
+      </tr>
+    ));
 
   const getUser = () => {
     let loginToken = localStorage.getItem("LoginToken");
@@ -413,13 +416,6 @@ function Main() {
     />
   );
 
-  useEffect(() => {
-    if (selectedInvoice !== null) {
-      console.log(selectedInvoice);
-      setOpenInvoice(true);
-    }
-  }, [selectedInvoice]);
-
   const handleClickOpenInvoice = (invoice) => {
     setSelectedInvoice(invoice);
   };
@@ -474,12 +470,20 @@ function Main() {
           Date.now().toString()
         )
         .send({ from: account })
-        .on("transactionHash", (hash) => {
-          console.log("[HASH NE]", hash);
+        .on("confirmation", (confirm, receipt, lastestBlockHash) => {
+          console.log("[Number comfirm]", confirm);
+          console.log("[Receipt comfirm]", receipt);
+          console.log("[lastestBlockHash]", lastestBlockHash);
           setLoading(false);
           setRefreshInvoices(!refreshInvoices);
           handleCloseNewInvoice();
         });
+      // .on("transactionHash", (hash) => {
+      //   console.log("[HASH NE]", hash);
+      //   setLoading(false);
+      //   setRefreshInvoices(!refreshInvoices);
+      //   handleCloseNewInvoice();
+      // });
     }
   };
 

@@ -31,9 +31,11 @@ const AuthProvider = ({ children }) => {
                 setUserAcc(data);
                 localStorage.setItem("UserId", data.userId);
                 localStorage.setItem("LoginToken", data.accessToken);
+                return true;
               })
               .catch((error) => {
                 console.log(error);
+                return true;
               });
           } catch (error) {
             console.error(error);
