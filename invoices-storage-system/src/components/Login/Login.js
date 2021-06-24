@@ -70,12 +70,6 @@ function Login() {
     }
   };
 
-  function checkError() {
-    if (!userAcc) {
-      setAlertVisible(true);
-    }
-  }
-
   const onDismiss = () => setAlertVisible(false);
   const signUpOnDismiss = () => setSignUpAlertVisible(false);
 

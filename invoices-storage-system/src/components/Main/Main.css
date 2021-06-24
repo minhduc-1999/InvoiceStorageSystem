@@ -15,3 +15,8 @@
     font-size: xx-large;
     color: white;
 }
+
+#notiModal {
+    width: fit-content;
+    height: fit-content;
+}

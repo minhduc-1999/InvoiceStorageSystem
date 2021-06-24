@@ -88,6 +88,10 @@ function Main() {
 
   //searchCombo-end
 
+  //modal noti
+  const [showNoti, setShowNoti] = useState(false);
+  const [txid, setTxid] = useState(null);
+
   useEffect(() => {
     getUser();
   }, [onChange]);
@@ -110,8 +114,9 @@ function Main() {
           setOnChange(!onChange);
         })
         .catch((err) => {
-          // console.error(err);
+          console.error("err");
           setConnected(false);
+          setConnecting(false);
           return false;
         });
     } else if (window.web3) {
@@ -157,6 +162,7 @@ function Main() {
       .catch((err) => {
         // console.error(err);
         setConnected(false);
+        setConnecting(false);
         return false;
       });
   };
@@ -459,6 +465,38 @@ function Main() {
         _company: receiverCompany,
         _email: receiverEmail,
       };
+      dInvoice.once("InvoiceUploaded", (err, event) => {
+        if (!err) {
+          console.log("Mined", event);
+          setShowNoti(true);
+          setTxid(event.transactionHash);
+          handleCloseNewInvoice();
+          const temp = {
+            numberId: event.returnValues._numberId,
+            sender: {
+              name: event.returnValues._sender._name,
+              address: event.returnValues._sender._address,
+              phone: event.returnValues._sender._phone,
+              company: event.returnValues._sender._company,
+              email: event.returnValues._sender._email,
+            },
+            receiver: {
+              name: event.returnValues._receiver._name,
+              address: event.returnValues._receiver._address,
+              phone: event.returnValues._receiver._phone,
+              company: event.returnValues._receiver._company,
+              email: event.returnValues._receiver._email,
+            },
+            discount: event.returnValues._discount,
+            tax: event.returnValues._tax,
+            total: event.returnValues._total,
+            details: JSON.parse(event.returnValues._details),
+            author: event.returnValues._author,
+            createAt: new Date(Number(event.returnValues._createAt)),
+          };
+          setInvoices([...invoices, temp]);
+        }
+      });
       dInvoice.methods
         .uploadInvoice(
           userAcc.userId,
@@ -470,15 +508,15 @@ function Main() {
           JSON.stringify(detailList),
           Date.now().toString()
         )
-        .send({ from: account })
-        .on("confirmation", (confirm, receipt, lastestBlockHash) => {
-          console.log("[Number comfirm]", confirm);
-          console.log("[Receipt comfirm]", receipt);
-          console.log("[lastestBlockHash]", lastestBlockHash);
-          setLoading(false);
-          setRefreshInvoices(!refreshInvoices);
-          handleCloseNewInvoice();
-        });
+        .send({ from: account });
+      // .on("confirmation", (confirm, receipt, lastestBlockHash) => {
+      //   console.log("[Number comfirm]", confirm);
+      //   console.log("[Receipt comfirm]", receipt);
+      //   console.log("[lastestBlockHash]", lastestBlockHash);
+      //   setLoading(false);
+      //   setRefreshInvoices(!refreshInvoices);
+      //   handleCloseNewInvoice();
+      // });
       // .on("transactionHash", (hash) => {
       //   console.log("[HASH NE]", hash);
       //   setLoading(false);
@@ -684,12 +722,12 @@ function Main() {
                     Không tìm thấy hóa đơn phù hợp
                   </p>
                 ) : (
-                  <table class="table">
+                  <table className="table">
                     <thead className="text-primary">
                       <tr>
                         <th>STT</th>
                         <th>Hóa đơn số</th>
-                        <th>TXID</th>
+                        {/* <th>TXID</th> */}
                         <th>Ngày tạo</th>
                         <th>Người gửi</th>
                         <th>Người nhận</th>
@@ -709,6 +747,7 @@ function Main() {
                 <Button
                   className="btn-fill"
                   color="primary"
+                  disabled={connecting}
                   style={{ marginTop: 0 }}
                   onClick={() => {
                     connectEther();
@@ -1307,6 +1346,65 @@ function Main() {
               type="submit"
             >
               Tìm kiếm
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <Modal isOpen={showNoti} size="lg" id="notiModal">
+          <ModalHeader style={{ justifyContent: "center", display: "flex" }}>
+            <p
+              style={{
+                fontSize: 20,
+                fontWeight: "normal",
+                textAlign: "center",
+                lineHeight: "25px",
+              }}
+              className="title"
+            >
+              <p
+                style={{
+                  fontSize: 20,
+                  color: "#39cf1b",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  marginBottom: "20px",
+                }}
+              >
+                Add invoice successfully
+              </p>{" "}
+              Use transaction id{" "}
+              <p
+                style={{
+                  display: "inline",
+                  fontSize: 20,
+                  fontWeight: "normal",
+                  textAlign: "center",
+                  lineHeight: "25px",
+                  color: "#ced197",
+                }}
+              >
+                {txid}
+              </p>{" "}
+              to see your invoice at{" "}
+              <a
+                target="_blank"
+                href={`https://ropsten.etherscan.io/tx/{txid}`}
+              >
+                link
+              </a>
+            </p>
+          </ModalHeader>
+          <ModalFooter style={{ margin: 10, justifyContent: "center" }}>
+            <Button
+              onClick={() => {
+                setShowNoti(false);
+                setTxid(null);
+              }}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+            >
+              OK
             </Button>
           </ModalFooter>
         </Modal>
