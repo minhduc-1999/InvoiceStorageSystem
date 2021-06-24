@@ -39,6 +39,47 @@ const AuthProvider = ({ children }) => {
             console.error(error);
           }
         },
+        signup: async (
+          username,
+          password,
+          address,
+          phoneNumber,
+          email,
+          company,
+          name
+        ) => {
+          try {
+            let tempAcc = {
+              username: username,
+              password: password,
+              claims: {
+                address: address,
+                phoneNumber: phoneNumber,
+                email: email,
+                company: company,
+                name: name,
+              },
+            };
+            axios
+              .post(
+                process.env.REACT_APP_BASE_URL + "users/register",
+                tempAcc,
+                {
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              )
+              .then((response) => {
+                console.log(response);
+              })
+              .catch((error) => {
+                console.log(error);
+              });
+          } catch (error) {
+            console.error(error);
+          }
+        },
         logout: async () => {
           try {
             await setUserAcc(null);
