@@ -91,6 +91,7 @@ function Main() {
   //modal noti
   const [showNoti, setShowNoti] = useState(false);
   const [txid, setTxid] = useState(null);
+  const [showNotiAdd, setShowNotiAdd] = useState(false);
 
   useEffect(() => {
     getUser();
@@ -470,6 +471,7 @@ function Main() {
           console.log("Mined", event);
           setShowNoti(true);
           setTxid(event.transactionHash);
+          setShowNotiAdd(false);
           const temp = {
             numberId: event.returnValues._numberId,
             sender: {
@@ -507,22 +509,27 @@ function Main() {
           JSON.stringify(detailList),
           Date.now().toString()
         )
-        .send({ from: account });
-      // .on("confirmation", (confirm, receipt, lastestBlockHash) => {
-      //   console.log("[Number comfirm]", confirm);
-      //   console.log("[Receipt comfirm]", receipt);
-      //   console.log("[lastestBlockHash]", lastestBlockHash);
-      //   setLoading(false);
-      //   setRefreshInvoices(!refreshInvoices);
-      //   handleCloseNewInvoice();
-      // });
-      // .on("transactionHash", (hash) => {
-      //   console.log("[HASH NE]", hash);
-      //   setLoading(false);
-      //   setRefreshInvoices(!refreshInvoices);
-      //   handleCloseNewInvoice();
-      // });
-      handleCloseNewInvoice();
+        .send({ from: account })
+        // .on("confirmation", (confirm, receipt, lastestBlockHash) => {
+        //   console.log("[Number comfirm]", confirm);
+        //   console.log("[Receipt comfirm]", receipt);
+        //   console.log("[lastestBlockHash]", lastestBlockHash);
+        //   setLoading(false);
+        //   setRefreshInvoices(!refreshInvoices);
+        //   handleCloseNewInvoice();
+        // });
+        .once("transactionHash", (hash) => {
+          console.log("[HASH NE]", hash);
+          setLoading(false);
+          setRefreshInvoices(!refreshInvoices);
+          handleCloseNewInvoice();
+          setShowNotiAdd(true);
+        });
+      // handleCloseNewInvoice();
+      // setShowNotiAdd(true);
+      // setTimeout(async () => {
+      //   setShowNotiAdd(false);
+      // }, 2000);
     }
   };
 
@@ -1363,16 +1370,16 @@ function Main() {
             >
               <p
                 style={{
-                  fontSize: 20,
+                  fontSize: 25,
                   color: "#39cf1b",
                   fontWeight: "bold",
                   textAlign: "center",
                   marginBottom: "20px",
                 }}
               >
-                Add invoice successfully
+                Giao dịch thành công
               </p>{" "}
-              Use transaction id{" "}
+              Mã giao dịch của bạn là{" "}
               <p
                 style={{
                   display: "inline",
@@ -1385,12 +1392,12 @@ function Main() {
               >
                 {txid}
               </p>{" "}
-              to see your invoice at{" "}
+              Xem giao dịch{" "}
               <a
                 target="_blank"
                 href={`https://ropsten.etherscan.io/tx/${txid}`}
               >
-                link
+                tại đây
               </a>
             </p>
           </ModalHeader>
@@ -1399,6 +1406,45 @@ function Main() {
               onClick={() => {
                 setShowNoti(false);
                 setTxid(null);
+              }}
+              className="btn-fill"
+              color="primary"
+              type="submit"
+            >
+              OK
+            </Button>
+          </ModalFooter>
+        </Modal>
+
+        <Modal isOpen={showNotiAdd} size="sm" id="notiModal">
+          <ModalHeader style={{ justifyContent: "center", display: "flex" }}>
+            <p
+              style={{
+                fontSize: 20,
+                fontWeight: "normal",
+                textAlign: "center",
+                lineHeight: "25px",
+              }}
+              className="title"
+            >
+              <p
+                style={{
+                  fontSize: 25,
+                  color: "#39cf1b",
+                  fontWeight: "bold",
+                  textAlign: "center",
+                  marginBottom: "20px",
+                }}
+              >
+                Thành công
+              </p>{" "}
+              Hoá đơn của bạn đang được xử lý, vui lòng chờ trong giây lát...{" "}
+            </p>
+          </ModalHeader>
+          <ModalFooter style={{ margin: 10, justifyContent: "center" }}>
+            <Button
+              onClick={() => {
+                setShowNotiAdd(false);
               }}
               className="btn-fill"
               color="primary"
