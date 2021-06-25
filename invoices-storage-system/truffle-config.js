@@ -95,11 +95,15 @@ module.exports = {
     //   network_id: 3,
     // },
     ropsten: {
-      provider: () =>
-        new HDWalletProvider(
-          mnemonic,
-          `https://ropsten.infura.io/v3/${infuraKey}`
-        ),
+      // provider: () =>
+      //   new HDWalletProvider(
+      //     mnemonic,
+      //     `https://ropsten.infura.io/v3/${infuraKey}`
+      //   ),
+      provider: new HDWalletProvider(
+        mnemonic,
+        `https://ropsten.infura.io/v3/${infuraKey}`
+      ),
       network_id: 3, // Ropsten's id
       gas: 5500000, // Ropsten has a lower block limit than mainnet
       confirmations: 2, // # of confs to wait between deployments. (default: 0)
@@ -108,7 +112,7 @@ module.exports = {
     },
   },
   contracts_directory: "./src/contracts/",
-  // contracts_build_directory: "./src/abis/",
+  contracts_build_directory: "E:/Code/Blockchain/InvoiceStorageSystem/abis",
   compilers: {
     solc: {
       optimizer: {

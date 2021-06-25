@@ -39,7 +39,7 @@ router.post("/register", async (req, res) => {
   };
   delete newUser.password;
   User.create(newUser)
-    .then((user) => res.json(user))
+    .then((user) => res.status(200).send())
     .catch((err) => res.status(500).send(err));
 });
 

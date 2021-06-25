@@ -57,6 +57,7 @@ function Login() {
       )
         .then((rs) => {
           if (rs) {
+            console.log("dk dc ne");
             setIsLogin(true);
           } else {
             setSignUpAlertVisible(true);

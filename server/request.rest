@@ -35,7 +35,7 @@ POST http://localhost:3000/users/register
 Content-Type: application/json
 
 {
-    "username": "minhduc",
+    "username": "test",
     "password": "123456",
     "claims": {
         "address": "QNa",

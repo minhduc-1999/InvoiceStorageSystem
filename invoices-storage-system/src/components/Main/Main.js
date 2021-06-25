@@ -470,7 +470,6 @@ function Main() {
           console.log("Mined", event);
           setShowNoti(true);
           setTxid(event.transactionHash);
-          handleCloseNewInvoice();
           const temp = {
             numberId: event.returnValues._numberId,
             sender: {
@@ -523,6 +522,7 @@ function Main() {
       //   setRefreshInvoices(!refreshInvoices);
       //   handleCloseNewInvoice();
       // });
+      handleCloseNewInvoice();
     }
   };
 
@@ -1388,7 +1388,7 @@ function Main() {
               to see your invoice at{" "}
               <a
                 target="_blank"
-                href={`https://ropsten.etherscan.io/tx/{txid}`}
+                href={`https://ropsten.etherscan.io/tx/${txid}`}
               >
                 link
               </a>
